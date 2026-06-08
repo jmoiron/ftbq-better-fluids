@@ -13,8 +13,8 @@ Recipe viewing is implemented in FTB-Quests 1.20.4, but it's not been backported
 
 Quest-book authors can add `Fluid+` types to their questbook. The workflow is almost identical to Fluid quests:
 
-![./img/menu.png]
+![menu](./img/menu.png)
 
 When the player views the quest, they can click on the fluid and see its recipe in their recipe viewer. The info text is similar to item quests:
 
-![./img/detail.png]
+![detail](./img/detail.png)
