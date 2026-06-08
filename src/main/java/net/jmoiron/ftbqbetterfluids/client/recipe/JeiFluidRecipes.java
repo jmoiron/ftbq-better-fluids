@@ -1,6 +1,6 @@
-package dev.jmoiron.ftbqbetterfluids.client.recipe;
+package net.jmoiron.ftbqbetterfluids.client.recipe;
 
-import dev.jmoiron.ftbqbetterfluids.FTBQBetterFluids;
+import net.jmoiron.ftbqbetterfluids.FTBQBetterFluids;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.forge.ForgeTypes;

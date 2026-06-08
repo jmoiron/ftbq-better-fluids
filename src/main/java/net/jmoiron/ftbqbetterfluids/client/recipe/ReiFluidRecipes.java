@@ -1,4 +1,4 @@
-package dev.jmoiron.ftbqbetterfluids.client.recipe;
+package net.jmoiron.ftbqbetterfluids.client.recipe;
 
 import dev.architectury.fluid.FluidStack;
 import me.shedaniel.rei.api.client.view.ViewSearchBuilder;

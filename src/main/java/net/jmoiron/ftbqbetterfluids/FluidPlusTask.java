@@ -1,10 +1,10 @@
-package dev.jmoiron.ftbqbetterfluids;
+package net.jmoiron.ftbqbetterfluids;
 
 import dev.architectury.fluid.FluidStack;
-import dev.architectury.registry.registries.RegistrarManager;
 import dev.ftb.mods.ftblibrary.config.ConfigGroup;
 import dev.ftb.mods.ftblibrary.config.FluidConfig;
 import dev.ftb.mods.ftblibrary.config.NBTConfig;
+import dev.ftb.mods.ftblibrary.config.Tristate;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.ui.Button;
@@ -14,17 +14,15 @@ import dev.ftb.mods.ftblibrary.util.client.ClientUtils;
 import dev.ftb.mods.ftblibrary.util.client.PositionedIngredient;
 import dev.ftb.mods.ftbquests.quest.Quest;
 import dev.ftb.mods.ftbquests.quest.TeamData;
+import dev.ftb.mods.ftbquests.quest.task.FluidTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
 import dev.ftb.mods.ftbquests.quest.task.TaskType;
-import dev.jmoiron.ftbqbetterfluids.client.recipe.ClientRecipeViewers;
+import net.jmoiron.ftbqbetterfluids.client.recipe.ClientRecipeViewers;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
@@ -32,23 +30,24 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fluids.FluidUtil;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.Optional;
 
-public class FluidPlusTask extends Task {
+public class FluidPlusTask extends FluidTask {
     public static TaskType TYPE;
-
-    private Fluid fluid = Fluids.WATER;
+    private static final MethodHandle TASK_FILL_CONFIG_GROUP = findTaskFillConfigGroup();
     @Nullable
-    private CompoundTag fluidNBT;
-    @Nullable
-    private FluidStack cachedFluidStack;
+    private static final Field DETECTOR_CONSUME_FLUID_FIELD = findDetectorConsumeFluidField();
 
     public FluidPlusTask(long id, Quest quest) {
         super(id, quest);
+        forceDetectorConsumeFluidFalse();
     }
 
     @Override
@@ -56,23 +55,25 @@ public class FluidPlusTask extends Task {
         return TYPE;
     }
 
-    public Fluid getFluid() {
-        return fluid;
-    }
-
+    @Override
     public FluidPlusTask setFluid(Fluid fluid) {
-        this.fluid = normalizeFluid(fluid);
+        super.setFluid(normalizeFluid(fluid));
         clearCachedData();
         return this;
     }
 
-    @Nullable
-    public CompoundTag getFluidNBT() {
-        return fluidNBT;
+    @Override
+    public long getMaxProgress() {
+        return 1L;
     }
 
     @Override
     public boolean consumesResources() {
+        return false;
+    }
+
+    @Override
+    public boolean canInsertItem() {
         return false;
     }
 
@@ -88,47 +89,32 @@ public class FluidPlusTask extends Task {
 
     @Override
     public void writeData(CompoundTag nbt) {
+        forceDetectorConsumeFluidFalse();
         super.writeData(nbt);
-        nbt.putString("fluid", RegistrarManager.getId(fluid, Registries.FLUID).toString());
-        if (fluidNBT != null) {
-            nbt.put("nbt", fluidNBT);
-        }
+        nbt.remove("amount");
+        nbt.putString("consume_fluid", Tristate.FALSE.name());
     }
 
     @Override
     public void readData(CompoundTag nbt) {
         super.readData(nbt);
-        fluid = normalizeFluid(BuiltInRegistries.FLUID.get(new ResourceLocation(nbt.getString("fluid"))));
-        fluidNBT = nbt.get("nbt") instanceof CompoundTag tag ? tag : null;
-        clearCachedData();
+        forceDetectorConsumeFluidFalse();
     }
 
     @Override
     public void writeNetData(FriendlyByteBuf buffer) {
+        forceDetectorConsumeFluidFalse();
         super.writeNetData(buffer);
-        buffer.writeResourceLocation(RegistrarManager.getId(fluid, Registries.FLUID));
-        buffer.writeNbt(fluidNBT);
     }
 
     @Override
     public void readNetData(FriendlyByteBuf buffer) {
         super.readNetData(buffer);
-        fluid = normalizeFluid(BuiltInRegistries.FLUID.get(buffer.readResourceLocation()));
-        fluidNBT = buffer.readNbt();
-        clearCachedData();
-    }
-
-    @Override
-    public void clearCachedData() {
-        super.clearCachedData();
-        cachedFluidStack = null;
+        forceDetectorConsumeFluidFalse();
     }
 
     public FluidStack createFluidStack() {
-        if (cachedFluidStack == null) {
-            cachedFluidStack = architecturyStack(fluid, fluidNBT);
-        }
-        return cachedFluidStack;
+        return architecturyStack(getFluid(), getFluidNBT());
     }
 
     public static FluidStack architecturyStack(Fluid fluid, @Nullable CompoundTag nbt) {
@@ -151,13 +137,13 @@ public class FluidPlusTask extends Task {
     @Override
     @OnlyIn(Dist.CLIENT)
     public void fillConfigGroup(ConfigGroup config) {
-        super.fillConfigGroup(config);
-        config.add("fluid", new FluidConfig(false), createFluidStack(), v -> {
-            fluid = normalizeFluid(v.getFluid());
+        fillBaseTaskConfigGroup(config);
+        config.add("fluid", new FluidConfig(false).showAmount(false), createFluidStack(), v -> {
+            setFluid(v.getFluid());
             clearCachedData();
         }, architecturyStack(Fluids.WATER, null));
-        config.add("fluid_nbt", new NBTConfig(), fluidNBT, v -> {
-            fluidNBT = v;
+        config.add("fluid_nbt", new NBTConfig(), getFluidNBT(), v -> {
+            setFluidNBT(v);
             clearCachedData();
         }, null);
     }
@@ -217,17 +203,67 @@ public class FluidPlusTask extends Task {
     }
 
     private boolean matches(net.minecraftforge.fluids.FluidStack contained) {
-        if (contained.isEmpty() || contained.getFluid() != fluid) {
+        if (contained.isEmpty() || contained.getFluid() != getFluid()) {
             return false;
         }
-        return fluidNBT == null || Objects.equals(fluidNBT, contained.getTag());
+        return getFluidNBT() == null || Objects.equals(getFluidNBT(), contained.getTag());
     }
 
     private net.minecraftforge.fluids.FluidStack createForgeFluidStack() {
-        return new net.minecraftforge.fluids.FluidStack(fluid, 1000, fluidNBT);
+        return new net.minecraftforge.fluids.FluidStack(getFluid(), 1000, getFluidNBT());
+    }
+
+    private void setFluidNBT(@Nullable CompoundTag fluidNBT) {
+        CompoundTag nbt = new CompoundTag();
+        writeData(nbt);
+        if (fluidNBT == null) {
+            nbt.remove("nbt");
+        } else {
+            nbt.put("nbt", fluidNBT);
+        }
+        readData(nbt);
     }
 
     private static Fluid normalizeFluid(@Nullable Fluid fluid) {
         return fluid == null || fluid == Fluids.EMPTY ? Fluids.WATER : fluid;
+    }
+
+    private void fillBaseTaskConfigGroup(ConfigGroup config) {
+        try {
+            TASK_FILL_CONFIG_GROUP.invoke(this, config);
+        } catch (Throwable e) {
+            throw new IllegalStateException("Failed to open Fluid+ task config", e);
+        }
+    }
+
+    private static MethodHandle findTaskFillConfigGroup() {
+        try {
+            return MethodHandles.lookup().findSpecial(Task.class, "fillConfigGroup", MethodType.methodType(void.class, ConfigGroup.class), FluidPlusTask.class);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private void forceDetectorConsumeFluidFalse() {
+        if (DETECTOR_CONSUME_FLUID_FIELD == null) {
+            return;
+        }
+
+        try {
+            DETECTOR_CONSUME_FLUID_FIELD.set(this, Tristate.FALSE);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Failed to set Fluid+ detector consume mode", e);
+        }
+    }
+
+    @Nullable
+    private static Field findDetectorConsumeFluidField() {
+        try {
+            Field field = FluidTask.class.getDeclaredField("consumeFluid");
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
     }
 }

@@ -2,5 +2,7 @@
   "ftbquests.task.ftbq_better_fluids.fluid_plus": "Fluid+",
   "ftbquests.task.ftbq_better_fluids.fluid_plus.fluid": "Fluid",
   "ftbquests.task.ftbq_better_fluids.fluid_plus.fluid_nbt": "Fluid NBT",
+  "ftbquests.task.ftbq_better_fluids.fluid_plus.amount": "Amount",
+  "ftbquests.task.ftbq_better_fluids.fluid_plus.consume_fluid": "Consume Fluid",
   "ftbq_better_fluids.task.click_recipe": "Click to view recipe(s)"
 }

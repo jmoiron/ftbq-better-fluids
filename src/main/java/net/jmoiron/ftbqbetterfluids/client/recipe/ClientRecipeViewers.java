@@ -1,4 +1,4 @@
-package dev.jmoiron.ftbqbetterfluids.client.recipe;
+package net.jmoiron.ftbqbetterfluids.client.recipe;
 
 import net.minecraftforge.fml.ModList;
 

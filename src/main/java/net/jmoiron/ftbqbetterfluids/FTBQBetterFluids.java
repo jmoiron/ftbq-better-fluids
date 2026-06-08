@@ -1,4 +1,4 @@
-package dev.jmoiron.ftbqbetterfluids;
+package net.jmoiron.ftbqbetterfluids;
 
 import com.mojang.logging.LogUtils;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
@@ -6,7 +6,7 @@ import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.util.client.ClientUtils;
 import dev.ftb.mods.ftbquests.quest.task.FluidTask;
 import dev.ftb.mods.ftbquests.quest.task.TaskTypes;
-import dev.jmoiron.ftbqbetterfluids.client.FluidPlusClient;
+import net.jmoiron.ftbqbetterfluids.client.FluidPlusClient;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.api.distmarker.Dist;
