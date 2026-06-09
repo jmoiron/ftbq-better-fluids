@@ -1,8 +1,13 @@
 {
   "ftbquests.task.ftbq_better_fluids.fluid_plus": "Fluid+",
   "ftbquests.task.ftbq_better_fluids.fluid_plus.fluid": "Fluid",
+  "ftbquests.task.ftbq_better_fluids.fluid_plus.fluids": "Fluids",
   "ftbquests.task.ftbq_better_fluids.fluid_plus.fluid_nbt": "Fluid NBT",
   "ftbquests.task.ftbq_better_fluids.fluid_plus.amount": "Amount",
   "ftbquests.task.ftbq_better_fluids.fluid_plus.consume_fluid": "Consume Fluid",
+  "ftbq_better_fluids.task.any_fluid": "Any of %s fluids",
+  "ftbq_better_fluids.task.any_of": "Any of",
+  "ftbq_better_fluids.task.valid_fluids_for": "Valid fluids for %s",
+  "ftbq_better_fluids.task.click_valid_fluids": "Click to view valid fluids",
   "ftbq_better_fluids.task.click_recipe": "Click to view recipe(s)"
 }
